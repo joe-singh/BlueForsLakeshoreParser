@@ -12,46 +12,79 @@ import re
 def get_master_temp_arrays(dirname):
     """
     Loop over all the Bluefors Lakeshore log folders in folder dirname (with name of the form YY-MM-DD)
-    and concatenate all of the data for CH6 (Mixing Chamber) Temperature and CH11 (RuOx-4221) Resistance. 
+    and concatenate all of the data for:
+    
+    CH6 (Mixing Chamber) Temperature 
+    CH9 (RuOx-5869) Resistance 
+    CH10 (RuOx-5870) Resistance
+    CH11 (RuOx-4221) Resistance
+    CH12 (RuOx-5871) Resistance 
 
     dirname: Directory where all the Lakeshore log folders are stored
-    Return: One pair of time and temperature arrays for both Ch6 and Ch11 over all the folders in dirname
+    Return: One pair of time and temperature/resistance arrays for Ch6, 9, 10, 11, 12 over all the folders in dirname
     """
     
     subdirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d))]
     subdirs.sort(key=lambda x:re.findall('\d+', x))
     
     t_6_arrays, Temp_6_arrays = [], []
+    t_9_arrays, R_9_arrays = [], []
+    t_10_arrays, R_10_arrays = [], []
     t_11_arrays, R_11_arrays = [], []
+    t_12_arrays, R_12_arrays = [], []
     
     for subdir in subdirs:
         f = os.path.join(dirname, subdir)
         
         if os.path.isdir(f):
             ch_6_name_string = f + "/CH6 T " + subdir + ".log" 
+            ch_9_name_string = f + "/CH9 R " + subdir + ".log" 
+            ch_10_name_string = f + "/CH10 R " + subdir + ".log"
             ch_11_name_string = f + "/CH11 R " + subdir + ".log"
-            
+            ch_12_name_string = f + "/CH12 R " + subdir + ".log"
         
             t_6, Temp_6 = get_time_and_value_arrays(ch_6_name_string)
+            t_9, R_9 = get_time_and_value_arrays(ch_9_name_string)
+            t_10, R_10 = get_time_and_value_arrays(ch_10_name_string)
             t_11, R_11 = get_time_and_value_arrays(ch_11_name_string)
+            t_12, R_12 = get_time_and_value_arrays(ch_12_name_string)
         
         
             t_6_arrays.append(t_6)
             Temp_6_arrays.append(Temp_6)
+
+            t_9_arrays.append(t_9)
+            R_9_arrays.append(R_9)
+
+            t_10_arrays.append(t_10)
+            R_10_arrays.append(R_10)
+
             t_11_arrays.append(t_11)
             R_11_arrays.append(R_11)
+
+            t_12_arrays.append(t_12)
+            R_12_arrays.append(R_12)
         
 
     t_6_arrays = np.concatenate(t_6_arrays)
     Temp_6_arrays = np.concatenate(Temp_6_arrays)
+
+    t_9_arrays = np.concatenate(t_9_arrays)
+    R_9_arrays = np.concatenate(R_9_arrays)
+
+    t_10_arrays = np.concatenate(t_10_arrays)
+    R_10_arrays = np.concatenate(R_10_arrays)
     
     t_11_arrays = np.concatenate(t_11_arrays)
     R_11_arrays = np.concatenate(R_11_arrays)
+
+    t_12_arrays = np.concatenate(t_12_arrays)
+    R_12_arrays = np.concatenate(R_12_arrays)
     
     Temp_11_arrays = calibration_function(R_11_arrays)
     
     
-    return t_6_arrays, Temp_6_arrays, t_11_arrays, Temp_11_arrays
+    return t_6_arrays, Temp_6_arrays, t_11_arrays, Temp_11_arrays, t_9_arrays, R_9_arrays, t_10_arrays, R_10_arrays, t_12_arrays, R_12_arrays
 
 def get_time_and_value_arrays(fname):
     """
