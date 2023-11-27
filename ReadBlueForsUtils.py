@@ -1,4 +1,5 @@
 from email.mime import base
+from operator import truediv
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
@@ -9,82 +10,184 @@ import os
 from scipy.optimize import curve_fit as cf
 import re
 
-def get_master_temp_arrays(dirname):
+def get_master_arrays(dirname, temps=False, ch_nos=[10, 11, 12]):
     """
     Loop over all the Bluefors Lakeshore log folders in folder dirname (with name of the form YY-MM-DD)
     and concatenate all of the data for:
     
     CH6 (Mixing Chamber) Temperature 
-    CH9 (RuOx-5869) Resistance 
-    CH10 (RuOx-5870) Resistance
-    CH11 (RuOx-4221) Resistance
-    CH12 (RuOx-5871) Resistance 
+    CH9 Resistance 
+    CH10 Resistance
+    CH11 Resistance 
+    CH12 Resistance 
+    CH13 Resistance
+    CH14 Resistance
 
     dirname: Directory where all the Lakeshore log folders are stored
-    Return: One pair of time and temperature/resistance arrays for Ch6, 9, 10, 11, 12 over all the folders in dirname
+    temps: Flag for if you want temperature or resistance arrays. The raw data is resistance arrays but if temps is True then
+           the function applies the resistance to temperature calibration function and returns the temperature instead of resistance. 
+           Set to false by default, so you can apply a calibration function yourself. 
+    ch_nos: Channel Numbers. Expected to be 9, 10, 11, 12, 13, 14. Set by default to 10, 11, 12 since that's what I use most often
+    Return: Time, temperature and resistance arrays for Ch6 and time and either temperature or resistance (depending on temps) 
+    arrays for the channels in ch_nos (9, 10, 11, 12, 13, 14) 
     """
     
     subdirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d))]
     subdirs.sort(key=lambda x:re.findall('\d+', x))
+
+    nine_flag=True
+    ten_flag=True 
+    eleven_flag=True
+    twelve_flag=True 
+    thirteen_flag=True
+    fourteen_flag=True
+
+
+    if 9 not in ch_nos:
+        nine_flag = False
+    if 10 not in ch_nos:
+        ten_flag = False 
+    if 11 not in ch_nos:
+        eleven_flag = False 
+    if 12 not in ch_nos:
+        twelve_flag = False 
+    if 13 not in ch_nos:
+        thirteen_flag = False
+    if 14 not in ch_nos:
+        fourteen_flag = False
     
-    t_6_arrays, Temp_6_arrays = [], []
+    t_6_arrays, Temp_6_arrays, R_6_arrays = [], [], []
     t_9_arrays, R_9_arrays = [], []
     t_10_arrays, R_10_arrays = [], []
     t_11_arrays, R_11_arrays = [], []
     t_12_arrays, R_12_arrays = [], []
+    t_13_arrays, R_13_arrays = [], []
+    t_14_arrays, R_14_arrays = [], []
     
     for subdir in subdirs:
         f = os.path.join(dirname, subdir)
         
         if os.path.isdir(f):
-            ch_6_name_string = f + "/CH6 T " + subdir + ".log" 
-            ch_9_name_string = f + "/CH9 R " + subdir + ".log" 
-            ch_10_name_string = f + "/CH10 R " + subdir + ".log"
-            ch_11_name_string = f + "/CH11 R " + subdir + ".log"
-            ch_12_name_string = f + "/CH12 R " + subdir + ".log"
-        
+            ch_6_name_string = f + "/CH6 T " + subdir + ".log"
+            ch_6_resistance_string = f + "/CH6 R " + subdir + ".log"
             t_6, Temp_6 = get_time_and_value_arrays(ch_6_name_string)
-            t_9, R_9 = get_time_and_value_arrays(ch_9_name_string)
-            t_10, R_10 = get_time_and_value_arrays(ch_10_name_string)
-            t_11, R_11 = get_time_and_value_arrays(ch_11_name_string)
-            t_12, R_12 = get_time_and_value_arrays(ch_12_name_string)
-        
-        
+            _, R_6 = get_time_and_value_arrays(ch_6_resistance_string)  
             t_6_arrays.append(t_6)
             Temp_6_arrays.append(Temp_6)
+            R_6_arrays.append(R_6)
 
-            t_9_arrays.append(t_9)
-            R_9_arrays.append(R_9)
-
-            t_10_arrays.append(t_10)
-            R_10_arrays.append(R_10)
-
-            t_11_arrays.append(t_11)
-            R_11_arrays.append(R_11)
-
-            t_12_arrays.append(t_12)
-            R_12_arrays.append(R_12)
-        
+            if nine_flag: 
+                ch_9_name_string = f + "/CH9 R " + subdir + ".log"
+                t_9, R_9 = get_time_and_value_arrays(ch_9_name_string)
+                t_9_arrays.append(t_9)
+                R_9_arrays.append(R_9)
+            if ten_flag:
+                ch_10_name_string = f + "/CH10 R " + subdir + ".log"
+                t_10, R_10 = get_time_and_value_arrays(ch_10_name_string)
+                t_10_arrays.append(t_10)
+                R_10_arrays.append(R_10)
+            if eleven_flag:
+                ch_11_name_string = f + "/CH11 R " + subdir + ".log"
+                t_11, R_11 = get_time_and_value_arrays(ch_11_name_string)
+                t_11_arrays.append(t_11)
+                R_11_arrays.append(R_11)
+            if twelve_flag:
+                ch_12_name_string = f + "/CH12 R " + subdir + ".log"
+                t_12, R_12 = get_time_and_value_arrays(ch_12_name_string)
+                t_12_arrays.append(t_12)
+                R_12_arrays.append(R_12)
+            if thirteen_flag:
+                ch_13_name_string = f + "/CH13 R " + subdir + ".log"
+                t_13, R_13 = get_time_and_value_arrays(ch_13_name_string)
+                t_13_arrays.append(t_13)
+                R_13_arrays.append(R_13)
+            if fourteen_flag:
+                ch_14_name_string = f + "/CH14 R " + subdir + ".log"
+                t_14, R_14 = get_time_and_value_arrays(ch_14_name_string)
+                t_14_arrays.append(t_14)
+                R_14_arrays.append(R_14)
 
     t_6_arrays = np.concatenate(t_6_arrays)
     Temp_6_arrays = np.concatenate(Temp_6_arrays)
+    R_6_arrays = np.concatenate(R_6_arrays)
 
-    t_9_arrays = np.concatenate(t_9_arrays)
-    R_9_arrays = np.concatenate(R_9_arrays)
+    if nine_flag:
+        t_9_arrays = np.concatenate(t_9_arrays)
+        R_9_arrays = np.concatenate(R_9_arrays)
+    
+    if ten_flag:
+        t_10_arrays = np.concatenate(t_10_arrays)
+        R_10_arrays = np.concatenate(R_10_arrays)
+    
+    if eleven_flag:
+        t_11_arrays = np.concatenate(t_11_arrays)
+        R_11_arrays = np.concatenate(R_11_arrays)
+    
+    if twelve_flag:
+        t_12_arrays = np.concatenate(t_12_arrays)
+        R_12_arrays = np.concatenate(R_12_arrays)
+    
+    if thirteen_flag:
+        t_13_arrays = np.concatenate(t_13_arrays)
+        R_13_arrays = np.concatenate(R_13_arrays)
+    
+    if fourteen_flag:
+        t_14_arrays = np.concatenate(t_14_arrays)
+        R_14_arrays = np.concatenate(R_14_arrays)
 
-    t_10_arrays = np.concatenate(t_10_arrays)
-    R_10_arrays = np.concatenate(R_10_arrays)
     
-    t_11_arrays = np.concatenate(t_11_arrays)
-    R_11_arrays = np.concatenate(R_11_arrays)
+    return_arrs = []
+    return_arrs.append(t_6_arrays) 
+    return_arrs.append(Temp_6_arrays) 
+    return_arrs.append(R_6_arrays)
 
-    t_12_arrays = np.concatenate(t_12_arrays)
-    R_12_arrays = np.concatenate(R_12_arrays)
-    
-    Temp_11_arrays = calibration_function(R_11_arrays)
-    
-    
-    return t_6_arrays, Temp_6_arrays, t_11_arrays, Temp_11_arrays, t_9_arrays, R_9_arrays, t_10_arrays, R_10_arrays, t_12_arrays, R_12_arrays
+    if nine_flag:
+        return_arrs.append(t_9_arrays)
+        if temps:
+            Temp_9_arrays = calibration_function_9(R_9_arrays)
+            return_arrs.append(Temp_9_arrays)
+        else:
+            return_arrs.append(R_9_arrays)
+    if ten_flag:
+        return_arrs.append(t_10_arrays)
+        if temps:
+            Temp_10_arrays = calibration_function_10(R_10_arrays)
+            return_arrs.append(Temp_10_arrays)
+        else:
+            return_arrs.append(R_10_arrays)
+    if eleven_flag:
+        return_arrs.append(t_11_arrays)
+        if temps:
+            Temp_11_arrays = calibration_function_11(R_11_arrays)
+            return_arrs.append(Temp_11_arrays)
+        else:
+            return_arrs.append(R_11_arrays)
+    if twelve_flag:
+        return_arrs.append(t_12_arrays)
+        if temps:
+            Temp_12_arrays = calibration_function_12(R_12_arrays)
+            return_arrs.append(Temp_12_arrays)
+        else:
+            return_arrs.append(R_12_arrays)
+    if thirteen_flag:
+        return_arrs.append(t_13_arrays)
+        if temps:
+            pass # No calibration function for channel 13
+            #Temp_13_arrays = calibration_function_13(R_12_arrays)
+            #return_arrs.append(Temp_12_arrays)
+        else:
+            return_arrs.append(R_13_arrays)
+    if fourteen_flag:
+        return_arrs.append(t_14_arrays)
+        if temps:
+            pass # No calibration function for channel 14
+            #Temp_13_arrays = calibration_function_13(R_12_arrays)
+            #return_arrs.append(Temp_12_arrays)
+        else:
+            return_arrs.append(R_14_arrays)
+
+    return return_arrs #t_6_arrays, Temp_6_arrays, R_6_arrays, t_9_arrays, Temp_9_arrays, t_10_arrays, Temp_10_arrays, t_11_arrays, Temp_11_arrays, t_12_arrays, Temp_12_arrays
+
 
 def get_time_and_value_arrays(fname):
     """
@@ -152,7 +255,55 @@ def get_arrays_from_file_cut_by_time(fname, ref_date_lower, ref_date_upper):
     t, v = cut_arrays_by_datetime(t, v, ref_date_lower, ref_date_upper)
     return t, v
 
-def calibration_function(r):
+
+def bluefors_temp_error(temps):
+    """Put error bars on the Bluefors MXC temperature. From Pradheesh's email on 9/20 where he says error between 15-100 mK < 5% but below 10 mK it can be 10%"""
+    errors = []
+
+    for temp in temps:
+        if temp < 15e-3:
+            errors.append(0.1*temp)
+        else: 
+            errors.append(0.05*temp)
+    
+    return np.array(errors)
+
+def calibration_function_9(r):
+    """
+    RuOx-5870 Calibration Function to convert resistance to temperature
+
+    r: Resistance in ohms
+    Return: temperature in Kelvin
+    """
+    log_r = np.log10(r)
+    log_t = -1.010359743562858 * log_r**6 + \
+            24.98874761505759 * log_r**5 + \
+            -256.5233885355524 * log_r**4 + \
+            1398.7550424544854 * log_r**3 + \
+            -4271.57638623511 * log_r**2 + \
+            6923.456319400351 * log_r + \
+            -4649.869041441679
+    return 10**(log_t)
+
+def calibration_function_10(r):
+    """
+    RuOx-5869 Calibration Function to convert resistance to temperature
+
+    r: Resistance in ohms
+    Return: temperature in Kelvin
+    """
+    log_r = np.log10(r)
+    log_t = -0.6500383015723634 * log_r**6 + \
+            16.4860065626999 * log_r**5 + \
+            -173.36739219882602 * log_r**4 + \
+            967.3618693239875 * log_r**3 + \
+            -3019.5631210780202 * log_r**2 + \
+            4996.025196409633 * log_r + \
+            -3420.2207405545496
+    return 10**(log_t)
+
+
+def calibration_function_11(r):
     """
     RuOx-4221 Calibration Function to convert resistance to temperature
 
@@ -167,6 +318,23 @@ def calibration_function(r):
             ((log_r)**4) * 45.52802670739256 + \
             ((log_r)**5) * -4.034719629444096 + \
             ((log_r)**6) * 0.14779818043050427
+    return 10**log_t
+
+def calibration_function_12(r):
+    """
+    RuOx-5871 Calibration Function to convert resistance to temperature
+
+    r: Resistance in ohms
+    Return: temperature in Kelvin
+    """
+    log_r = np.log10(r)
+    log_t = -0.5792896802925668 * log_r**6 + \
+            14.550215238428517 * log_r**5 + \
+            -151.514259636263 * log_r**4 + \
+            836.9939029985673 * log_r**3 + \
+            -2585.8799685039194 * log_r**2 + \
+            4232.9337322469 * log_r + \
+            -2865.176346538847
     return 10**log_t
 
 ## C/G Time Functions
